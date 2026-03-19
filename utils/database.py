@@ -34,6 +34,9 @@ def initialize_schema():
             status VARCHAR DEFAULT 'Under Review'
         )
     """)
+    # Migrate existing tables that predate source_url and status columns
+    con.execute("ALTER TABLE raw_contracts ADD COLUMN IF NOT EXISTS source_url VARCHAR")
+    con.execute("ALTER TABLE raw_contracts ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'Under Review'")
     con.execute("""
         CREATE TABLE IF NOT EXISTS raw_analyses (
             id VARCHAR PRIMARY KEY,
