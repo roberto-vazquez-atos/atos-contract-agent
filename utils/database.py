@@ -29,7 +29,9 @@ def initialize_schema():
             contract_type VARCHAR,
             raw_text TEXT,
             analyzed_at TIMESTAMP,
-            file_size_bytes INTEGER
+            file_size_bytes INTEGER,
+            source_url VARCHAR,
+            status VARCHAR DEFAULT 'Under Review'
         )
     """)
     con.execute("""
@@ -74,13 +76,13 @@ def initialize_schema():
 
 
 def save_contract(contract_id: str, filename: str, contract_type: str,
-                  raw_text: str, file_size: int):
+                  raw_text: str, file_size: int, source_url: str = None, status: str = "Under Review"):
     con = get_connection()
     con.execute("""
         INSERT OR REPLACE INTO raw_contracts
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, [contract_id, filename, contract_type, raw_text,
-          datetime.utcnow(), file_size])
+          datetime.utcnow(), file_size, source_url, status])
     con.close()
 
 

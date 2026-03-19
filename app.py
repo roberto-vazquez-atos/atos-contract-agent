@@ -101,13 +101,18 @@ if page == "Analyze Contract":
         "**INTERNAL**. All uploads are logged for audit purposes."
     )
 
-    col1, col2 = st.columns([2, 1])
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
         uploaded_file = st.file_uploader("Upload contract (.docx)", type=["docx"])
     with col2:
         contract_type_override = st.selectbox(
             "Contract type (auto-detected if left on Auto)",
             ["Auto-detect", "NDA", "SOW", "HIRING"],
+        )
+    with col3:
+        contract_status = st.selectbox(
+            "Status",
+            ["Under Review", "Draft", "Executed", "Expired", "Terminated"],
         )
 
     if uploaded_file:
@@ -126,7 +131,7 @@ if page == "Analyze Contract":
                     contract_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, uploaded_file.name + text[:200]))
                     try:
                         analysis = analyze_contract(text, contract_type)
-                        save_contract(contract_id, uploaded_file.name, contract_type, text, len(text))
+                        save_contract(contract_id, uploaded_file.name, contract_type, text, len(text), status=contract_status)
                         save_analysis(contract_id, analysis)
                         log_audit_event(
                             action="analyze",
@@ -217,6 +222,54 @@ if page == "Analyze Contract":
 
                 st.caption(f"Contract ID: `{contract_id}` — saved to local database.")
 
+                # Download report
+                st.divider()
+                report_lines = [
+                    f"ATOS CONTRACT ANALYSIS REPORT",
+                    f"{'=' * 50}",
+                    f"File:             {uploaded_file.name}",
+                    f"Contract Type:    {contract_type}",
+                    f"Status:           {contract_status}",
+                    f"Risk Score:       {analysis.get('risk_score', 0)} / 100",
+                    f"Analyzed:         {__import__('datetime').datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+                    f"",
+                    f"KEY FIELDS",
+                    f"{'-' * 50}",
+                    f"Party A:          {analysis.get('party_a', '—')}",
+                    f"Party B:          {analysis.get('party_b', '—')}",
+                    f"Effective Date:   {analysis.get('effective_date', '—')}",
+                    f"Expiration Date:  {analysis.get('expiration_date', '—')}",
+                    f"Governing Law:    {analysis.get('governing_law', '—')}",
+                    f"Contract Value:   {analysis.get('contract_value', '—')}",
+                    f"",
+                    f"SUMMARY",
+                    f"{'-' * 50}",
+                    analysis.get('summary', '—'),
+                    f"",
+                    f"RISK FLAGS",
+                    f"{'-' * 50}",
+                ] + [f"  • {f}" for f in analysis.get('risk_flags', [])] + [
+                    f"",
+                    f"MISSING CLAUSES",
+                    f"{'-' * 50}",
+                ] + [f"  • {c}" for c in analysis.get('missing_clauses', [])] + [
+                    f"",
+                    f"SUGGESTED ADDITIONS",
+                    f"{'-' * 50}",
+                ] + [f"  • {s}" for s in analysis.get('suggested_additions', [])] + [
+                    f"",
+                    f"KEY OBLIGATIONS",
+                    f"{'-' * 50}",
+                ] + [f"  • {o}" for o in analysis.get('key_obligations', [])]
+                report_text = "\n".join(report_lines)
+                st.download_button(
+                    label="⬇️ Download Analysis Report",
+                    data=report_text,
+                    file_name=f"analysis_{uploaded_file.name.replace('.docx', '')}.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                )
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGE: Compare Contracts
@@ -301,6 +354,7 @@ elif page == "Contract Analytics":
         expiring = query("SELECT * FROM mart_expiring_soon WHERE expiring_within_90_days = true")
         counterparties = query("SELECT * FROM mart_counterparties")
         coverage = query("SELECT * FROM mart_clause_coverage")
+        compliance = query("SELECT * FROM mart_compliance_check ORDER BY compliance_pct ASC")
     except Exception:
         st.info("No data yet — analyze some contracts first, then refresh dbt models.")
         st.stop()
@@ -330,9 +384,20 @@ elif page == "Contract Analytics":
     # Contract table
     st.subheader("All Contracts")
     display_cols = ["filename", "contract_type", "party_a", "party_b",
-                    "effective_date", "expiration_date", "risk_score", "risk_tier"]
+                    "effective_date", "expiration_date", "risk_score", "risk_tier", "source_url"]
     available = [c for c in display_cols if c in risks.columns]
     st.dataframe(risks[available], use_container_width=True, hide_index=True)
+
+    # Compliance check
+    if not compliance.empty:
+        st.subheader("✅ Atos Standards Compliance")
+        for _, row in compliance.iterrows():
+            status_icon = {"COMPLIANT": "🟢", "NEEDS REVIEW": "🟡", "NON-COMPLIANT": "🔴"}.get(row.get("compliance_status", ""), "⚪")
+            st.markdown(
+                f"{status_icon} **{row['filename']}** — "
+                f"{row['compliance_pct']}% compliant ({row['clauses_present']}/{row['total_required_clauses']} clauses) "
+                f"· {row.get('missing_high_risk', 0)} high-risk missing"
+            )
 
     # Expiring soon
     if not expiring.empty:
