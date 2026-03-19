@@ -1,0 +1,7 @@
+contract_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: data/contracts.duckdb
+      threads: 4

@@ -1,0 +1,82 @@
+version: 2
+
+sources:
+  - name: contract_db
+    description: >
+      Raw tables written by the Atos Contract Helper Agent application.
+      Each record represents a contract uploaded and analyzed by Claude.
+    schema: main
+    tables:
+      - name: raw_contracts
+        description: One row per uploaded contract document.
+        columns:
+          - name: id
+            description: Unique contract identifier (UUID5 of filename + content hash).
+            tests:
+              - unique
+              - not_null
+          - name: filename
+            description: Original uploaded filename.
+            tests:
+              - not_null
+          - name: contract_type
+            description: Detected or user-selected contract type.
+            tests:
+              - accepted_values:
+                  values: ['NDA', 'SOW', 'HIRING']
+          - name: analyzed_at
+            description: UTC timestamp when the contract was analyzed.
+            tests:
+              - not_null
+
+      - name: raw_analyses
+        description: Claude's structured analysis output for each contract.
+        columns:
+          - name: id
+            description: Unique analysis ID.
+            tests:
+              - unique
+              - not_null
+          - name: contract_id
+            description: Foreign key to raw_contracts.id.
+            tests:
+              - not_null
+              - relationships:
+                  to: source('contract_db', 'raw_contracts')
+                  field: id
+          - name: risk_score
+            description: Overall risk score from 0 (low) to 100 (high).
+            tests:
+              - not_null
+
+      - name: raw_clauses
+        description: Individual clause assessments extracted per contract.
+        columns:
+          - name: id
+            description: Unique clause record ID.
+            tests:
+              - unique
+              - not_null
+          - name: contract_id
+            description: Foreign key to raw_contracts.id.
+            tests:
+              - not_null
+          - name: risk_level
+            description: Clause-level risk assessment.
+            tests:
+              - accepted_values:
+                  values: ['low', 'medium', 'high']
+
+      - name: raw_audit_log
+        description: Audit trail of every analysis and comparison action.
+        columns:
+          - name: id
+            description: Unique audit event ID.
+            tests:
+              - unique
+              - not_null
+          - name: action
+            description: Type of action performed.
+            tests:
+              - accepted_values:
+                  values: ['analyze', 'compare']

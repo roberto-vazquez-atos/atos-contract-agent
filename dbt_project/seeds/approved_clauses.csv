@@ -1,0 +1,31 @@
+contract_type,clause_type,required,risk_level,description
+NDA,confidentiality_definition,true,high,Clear definition of what constitutes Confidential Information
+NDA,obligations_of_receiving_party,true,high,Explicit obligations to protect and not disclose information
+NDA,term_and_duration,true,medium,Agreement duration and survival period for obligations
+NDA,return_or_destruction,true,medium,Obligation to return or destroy confidential materials on request
+NDA,governing_law,true,medium,Applicable law and jurisdiction
+NDA,no_license,true,low,Clause confirming no IP licence is granted by disclosure
+NDA,exceptions,true,low,Standard exceptions including public domain and prior knowledge
+NDA,dispute_resolution,false,low,Process for resolving disagreements
+SOW,project_scope,true,high,Detailed description of in-scope and out-of-scope work
+SOW,deliverables_and_acceptance,true,high,Formal deliverables with measurable acceptance criteria
+SOW,payment_terms,true,high,Total value and payment schedule and invoice terms
+SOW,intellectual_property,true,high,Clear ownership of custom IP and licence grants for background IP
+SOW,data_protection,true,high,GDPR compliance and DPA reference and data handling obligations
+SOW,roles_and_responsibilities,true,medium,Named roles for both parties with explicit accountabilities
+SOW,change_management,true,medium,Formal change request process for scope or timeline or budget changes
+SOW,limitation_of_liability,true,medium,Liability cap and exclusion of consequential damages
+SOW,termination,true,medium,Termination for convenience and for cause with notice periods
+SOW,warranty,true,medium,Warranty period and remedy obligations for non-conforming deliverables
+SOW,force_majeure,true,low,Protection for unforeseeable events beyond parties control
+SOW,governing_law,true,low,Applicable law and dispute resolution mechanism
+HIRING,parties_and_role,true,high,Employer and employee identification with role and start date
+HIRING,compensation,true,high,Base salary and bonus structure and payment frequency
+HIRING,working_hours,true,high,Standard hours and overtime policy and remote work conditions
+HIRING,ip_and_inventions,true,high,Assignment of IP created during employment to employer
+HIRING,confidentiality,true,high,Obligations to protect employer confidential information
+HIRING,termination_and_notice,true,high,Notice periods for resignation and dismissal and severance terms
+HIRING,non_compete,false,medium,Post-employment restrictions on competitive activity
+HIRING,benefits,true,medium,Health insurance and pension and vacation entitlement
+HIRING,probation_period,true,low,Duration and conditions of probationary period
+HIRING,governing_law,true,low,Applicable employment law and jurisdiction
