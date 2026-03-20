@@ -11,7 +11,9 @@ load_dotenv()
 
 from utils.document_parser import extract_text_from_uploaded_file, detect_contract_type
 from utils.claude_client import analyze_contract, compare_contracts
-from utils.database import initialize_schema, save_contract, save_analysis, query, contract_exists, log_audit_event
+from utils.database import (initialize_schema, clean_duplicate_analyses,
+                            save_contract, save_analysis, query,
+                            contract_exists, log_audit_event)
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -47,6 +49,7 @@ if not check_password():
 
 # ── Startup ───────────────────────────────────────────────────────────────────
 initialize_schema()
+clean_duplicate_analyses()
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -123,12 +126,22 @@ if page == "Analyze Contract":
 
         st.info(f"Detected contract type: **{contract_type}**  |  Characters: **{len(text):,}**")
 
-        if st.button("Analyze Contract", type="primary", use_container_width=True):
+        contract_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, uploaded_file.name + text[:200]))
+        already_exists = contract_exists(contract_id)
+        if already_exists:
+            st.warning(
+                f"⚠️ **{uploaded_file.name}** has already been analyzed and saved. "
+                "Re-analyzing will overwrite the previous result."
+            )
+            reanalyze = st.checkbox("Yes, re-analyze and overwrite the existing entry")
+        else:
+            reanalyze = True
+
+        if st.button("Analyze Contract", type="primary", use_container_width=True) and reanalyze:
             if not os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY") == "your_api_key_here":
                 st.error("Please add your ANTHROPIC_API_KEY to the .env file before analyzing.")
             else:
                 with st.spinner("Claude is analyzing your contract..."):
-                    contract_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, uploaded_file.name + text[:200]))
                     try:
                         analysis = analyze_contract(text, contract_type)
                         save_contract(contract_id, uploaded_file.name, contract_type, text, len(text), status=contract_status)

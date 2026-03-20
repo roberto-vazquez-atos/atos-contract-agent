@@ -89,8 +89,44 @@ def save_contract(contract_id: str, filename: str, contract_type: str,
     con.close()
 
 
+def delete_contract(contract_id: str):
+    """Remove a contract and all associated analyses and clauses."""
+    con = get_connection()
+    con.execute("DELETE FROM raw_contracts WHERE id = ?", [contract_id])
+    con.execute("DELETE FROM raw_analyses WHERE contract_id = ?", [contract_id])
+    con.execute("DELETE FROM raw_clauses WHERE contract_id = ?", [contract_id])
+    con.close()
+
+
+def clean_duplicate_analyses():
+    """Remove duplicate analyses/clauses, keeping only the most recent per contract.
+
+    Runs at startup to repair databases created before deduplication was enforced.
+    """
+    con = get_connection()
+    con.execute("""
+        DELETE FROM raw_analyses
+        WHERE id NOT IN (
+            SELECT id FROM (
+                SELECT id,
+                       ROW_NUMBER() OVER (PARTITION BY contract_id ORDER BY analyzed_at DESC) AS rn
+                FROM raw_analyses
+            ) ranked
+            WHERE rn = 1
+        )
+    """)
+    con.execute("""
+        DELETE FROM raw_clauses
+        WHERE contract_id NOT IN (SELECT contract_id FROM raw_analyses)
+    """)
+    con.close()
+
+
 def save_analysis(contract_id: str, analysis: dict):
     con = get_connection()
+    # Delete stale records before inserting to prevent duplicates on re-upload
+    con.execute("DELETE FROM raw_analyses WHERE contract_id = ?", [contract_id])
+    con.execute("DELETE FROM raw_clauses WHERE contract_id = ?", [contract_id])
     con.execute("""
         INSERT OR REPLACE INTO raw_analyses
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
