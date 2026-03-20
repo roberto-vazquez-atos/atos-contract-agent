@@ -1,0 +1,29 @@
+version: 2
+
+seeds:
+  - name: approved_clauses
+    description: >
+      Atos-approved standard clause requirements per contract type.
+      This is the reference table used by mart_compliance_check to determine
+      which clauses each contract type must contain, and to classify missing
+      clauses by risk severity. Maintained by the Legal team.
+    columns:
+      - name: contract_type
+        description: Contract type this standard applies to — NDA, SOW, or HIRING.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['NDA', 'SOW', 'HIRING']
+      - name: clause_type
+        description: Standardised clause category identifier in snake_case (e.g. payment_terms, governing_law). Must match the clause_type values produced by Claude's analysis prompts.
+        tests:
+          - not_null
+      - name: required
+        description: Boolean flag — true if this clause is mandatory for the contract type, false if it is recommended but optional.
+      - name: risk_level
+        description: Risk severity if this clause is absent — high, medium, or low.
+        tests:
+          - accepted_values:
+              values: ['high', 'medium', 'low']
+      - name: description
+        description: Plain-language description of what this clause should cover, used as guidance for the Legal team.

@@ -91,6 +91,16 @@ def run_dbt():
     return result.returncode == 0, result.stdout + result.stderr
 
 
+def run_dbt_docs():
+    """Generate dbt documentation site into dbt_project/target/."""
+    dbt_exe = os.path.join(PROJECT_ROOT, ".venv", "Scripts", "dbt")
+    result = subprocess.run(
+        [dbt_exe, "docs", "generate", "--project-dir", "dbt_project", "--profiles-dir", "dbt_project"],
+        capture_output=True, text=True, cwd=PROJECT_ROOT
+    )
+    return result.returncode == 0, result.stdout + result.stderr
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGE: Analyze Contract
 # ══════════════════════════════════════════════════════════════════════════════
@@ -350,7 +360,7 @@ elif page == "Contract Analytics":
     st.title("📊 Contract Analytics")
     st.caption("Live insights from your contract library, powered by dbt + DuckDB.")
 
-    col_refresh, _ = st.columns([1, 3])
+    col_refresh, col_docs, _ = st.columns([1, 1, 2])
     with col_refresh:
         if st.button("🔄 Refresh dbt Models"):
             with st.spinner("Running dbt..."):
@@ -359,6 +369,23 @@ elif page == "Contract Analytics":
                 st.success("dbt models refreshed.")
             else:
                 st.error("dbt run failed.")
+                with st.expander("dbt logs"):
+                    st.code(logs)
+    with col_docs:
+        if st.button("📚 Generate dbt Docs"):
+            with st.spinner("Generating documentation..."):
+                success, logs = run_dbt_docs()
+            if success:
+                docs_path = os.path.join(PROJECT_ROOT, "dbt_project", "target", "index.html")
+                st.success("Documentation generated.")
+                st.info(
+                    f"To browse the data dictionary and lineage graph, run in a terminal:\n\n"
+                    f"```\ncd {PROJECT_ROOT}\n"
+                    f".venv\\Scripts\\dbt docs serve --project-dir dbt_project --profiles-dir dbt_project\n```\n\n"
+                    f"Then open **http://localhost:8080** in your browser."
+                )
+            else:
+                st.error("dbt docs generation failed.")
                 with st.expander("dbt logs"):
                     st.code(logs)
 
