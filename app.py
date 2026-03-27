@@ -395,6 +395,7 @@ elif page == "Contract Analytics":
         counterparties = query("SELECT * FROM mart_counterparties")
         coverage = query("SELECT * FROM mart_clause_coverage")
         compliance = query("SELECT * FROM mart_compliance_check ORDER BY compliance_pct ASC")
+        clause_gaps = query("SELECT * FROM mart_clause_gaps ORDER BY contract_type, gap_pct DESC")
     except Exception:
         st.info("No data yet — analyze some contracts first, then refresh dbt models.")
         st.stop()
@@ -438,6 +439,58 @@ elif page == "Contract Analytics":
                 f"{row['compliance_pct']}% compliant ({row['clauses_present']}/{row['total_required_clauses']} clauses) "
                 f"· {row.get('missing_high_risk', 0)} high-risk missing"
             )
+
+    # Clause gaps — most commonly missing required clauses across the portfolio
+    if not clause_gaps.empty:
+        st.subheader("🕳️ Most Commonly Missing Clauses")
+        st.caption(
+            "Which required Atos-standard clauses are absent most often? "
+            "Unlike the coverage chart, this view starts from the full list of required clauses, "
+            "so clauses that are consistently absent are never overlooked."
+        )
+
+        gap_types = clause_gaps["contract_type"].unique().tolist()
+        gap_tabs = st.tabs(gap_types)
+        for tab, ctype in zip(gap_tabs, gap_types):
+            with tab:
+                df_type = clause_gaps[clause_gaps["contract_type"] == ctype].copy()
+                # Only show clauses that are actually missing in at least one contract
+                df_missing = df_type[df_type["contracts_missing"] > 0]
+                if df_missing.empty:
+                    st.success("All required clauses are present in every contract of this type.")
+                else:
+                    risk_colors = {"high": "#e74c3c", "medium": "#f39c12", "low": "#2ecc71"}
+                    fig_gap = px.bar(
+                        df_missing,
+                        x="gap_pct",
+                        y="required_clause",
+                        color="risk_level",
+                        orientation="h",
+                        color_discrete_map=risk_colors,
+                        labels={
+                            "gap_pct": "% of contracts missing this clause",
+                            "required_clause": "Required Clause",
+                            "risk_level": "Risk Level",
+                        },
+                        text="contracts_missing",
+                    )
+                    fig_gap.update_traces(
+                        texttemplate="%{text} contract(s)",
+                        textposition="outside",
+                    )
+                    fig_gap.update_layout(
+                        yaxis={"categoryorder": "total ascending"},
+                        xaxis_range=[0, 110],
+                        showlegend=True,
+                        height=max(300, len(df_missing) * 45),
+                    )
+                    st.plotly_chart(fig_gap, use_container_width=True)
+
+                    # Detail table with description
+                    detail_cols = ["required_clause", "risk_level", "contracts_missing",
+                                   "contracts_total", "gap_pct", "description"]
+                    available_cols = [c for c in detail_cols if c in df_missing.columns]
+                    st.dataframe(df_missing[available_cols], use_container_width=True, hide_index=True)
 
     # Expiring soon
     if not expiring.empty:

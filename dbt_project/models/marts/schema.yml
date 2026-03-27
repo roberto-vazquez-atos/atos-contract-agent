@@ -127,6 +127,43 @@ models:
       - name: governing_laws
         description: Comma-separated list of distinct governing laws appearing across contracts with this counterparty.
 
+  - name: mart_clause_gaps
+    description: >
+      Portfolio-level required-clause gap analysis. For every clause that Atos
+      standards mark as required (approved_clauses seed), this model counts how
+      many contracts of that type are missing it, producing a gap_pct and a
+      gap_rank (1 = most commonly missing). Unlike mart_clause_coverage, which
+      only counts clauses Claude detected, this model starts from the full list
+      of required clauses so entirely absent clauses are not overlooked.
+      Directly actionable for Legal: shows which clause to add to templates first.
+    columns:
+      - name: contract_type
+        description: Contract classification — NDA, SOW, or HIRING.
+        tests:
+          - not_null
+      - name: required_clause
+        description: Clause type as defined in the approved_clauses seed.
+        tests:
+          - not_null
+      - name: risk_level
+        description: Risk classification of this clause from the Atos standard (high, medium, low).
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['high', 'medium', 'low']
+      - name: description
+        description: Human-readable description of the clause from the Atos standard.
+      - name: contracts_total
+        description: Total number of contracts of this type in the portfolio.
+      - name: contracts_with_clause
+        description: Number of contracts where this clause was detected as present.
+      - name: contracts_missing
+        description: Number of contracts where this clause was absent.
+      - name: gap_pct
+        description: Percentage of contracts missing this clause (0 = always present, 100 = never present).
+      - name: gap_rank
+        description: Rank within the contract type ordered by gap_pct descending; 1 is the most commonly missing clause.
+
   - name: mart_expiring_soon
     description: >
       All contracts with a parseable expiration date, enriched with flags for
