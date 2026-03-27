@@ -1158,6 +1158,63 @@ def create_hiring_cloud_architect():
     print(f"Created: {path}")
 
 
+def create_demo_nda():
+    """Minimal NDA for live demo — short text, fast Claude analysis (~5 sec)."""
+    doc = Document()
+    doc.add_heading("NON-DISCLOSURE AGREEMENT", 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    doc.add_paragraph(
+        "This Non-Disclosure Agreement (\"Agreement\") is entered into as of 1 April 2026, "
+        "between Atos SE (\"Disclosing Party\") and DemoTech Ltd (\"Receiving Party\")."
+    )
+
+    doc.add_heading("1. Confidential Information", level=1)
+    doc.add_paragraph(
+        "\"Confidential Information\" means any technical or business information disclosed by "
+        "Disclosing Party, including trade secrets, source code, financial data, and customer lists. "
+        "It excludes information that is publicly available or independently developed by Receiving Party."
+    )
+
+    doc.add_heading("2. Obligations", level=1)
+    doc.add_paragraph(
+        "Receiving Party shall: (a) keep Confidential Information strictly confidential; "
+        "(b) not disclose it to any third party without prior written consent; "
+        "(c) use it solely to evaluate a potential business partnership."
+    )
+
+    doc.add_heading("3. Term", level=1)
+    doc.add_paragraph(
+        "This Agreement is effective from the date above for one (1) year. "
+        "Confidentiality obligations survive termination for two (2) additional years."
+    )
+
+    doc.add_heading("4. Return or Destruction", level=1)
+    doc.add_paragraph(
+        "On written request, Receiving Party shall promptly return or destroy all "
+        "Confidential Information and confirm destruction in writing."
+    )
+
+    doc.add_heading("5. No License", level=1)
+    doc.add_paragraph(
+        "Nothing in this Agreement grants any licence or right in or to Confidential Information."
+    )
+
+    doc.add_heading("6. Governing Law", level=1)
+    doc.add_paragraph(
+        "This Agreement is governed by the laws of France. Disputes shall be submitted to "
+        "the exclusive jurisdiction of the courts of Paris."
+    )
+
+    doc.add_heading("7. Signatures", level=1)
+    doc.add_paragraph("Agreed and signed by the authorised representatives of the parties.")
+    doc.add_paragraph("\nAtos SE\nBy: ___________________________\nName:\nTitle:\nDate:")
+    doc.add_paragraph("\nDemoTech Ltd\nBy: ___________________________\nName:\nTitle:\nDate:")
+
+    path = os.path.join(os.path.dirname(__file__), "demo_nda_short.docx")
+    doc.save(path)
+    print(f"Created: {path}")
+
+
 if __name__ == "__main__":
     create_sample_nda()
     create_sample_sow()
@@ -1168,4 +1225,5 @@ if __name__ == "__main__":
     create_sow_cybersecurity()
     create_hiring_data_engineer()
     create_hiring_cloud_architect()
+    create_demo_nda()
     print("Sample contracts generated successfully.")
